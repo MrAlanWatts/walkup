@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Walk-Up Soundboard</title>
+<style>
+:root{
+  --bg:#121212;
+  --panel:#1e1e1e;
+  --button:#2a2a2a;
+  --button-hover:#3a3a3a;
+  --border:#3a3a3a;
+  --text:#f2f2f2;
+  --muted:#9a9a9a;
+  --accent:#4da3ff;
+}
+
+body{
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  margin:0;
+  padding:16px;
+  background:var(--bg);
+  color:var(--text);
+}
+
+h1{
+  margin:0 0 12px 0;
+  font-size:20px;
+}
+
+.topbar{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-bottom:12px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1.3fr 1fr;
+  gap:10px;
+}
+
+button{
+  width:100%;
+  padding:16px 12px;
+  font-size:16px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--button);
+  color:var(--text);
+  cursor:pointer;
+}
+
+button:hover{
+  background:var(--button-hover);
+}
+
+.musicBtn{
+  font-weight:700;
+  background:#1f3d5a;
+}
+
+.musicBtn:hover{
+  background:#2b5f8e;
+}
+
+.pill{
+  padding:8px 10px;
+  border:1px solid var(--border);
+  border-radius:999px;
+  background:var(--panel);
+}
+
+.small{
+  font-size:12px;
+  color:var(--muted);
+}
+
+input[type="range"]{
+  width:180px;
+}
+
+.status{
+  margin-top:10px;
+  font-size:13px;
+}
+
+.muted{
+  color:var(--muted);
+}
+</style>
+</head>
+<body>
+  <h1>Walk-Up Soundboard</h1>
+
+  <div class="topbar">
+    <button id="enableAudioBtn" class="pill">Enable Audio</button>
+
+    <span class="pill">
+      Duck: <strong id="duckLabel">0.25</strong>
+      <input id="duckSlider" type="range" min="0.05" max="0.60" step="0.01" value="0.25" />
+    </span>
+
+    <span class="pill">
+      Duck fade ms:
+      <input id="duckFadeMs" type="number" min="0" max="2000" value="120" style="width:80px;" />
+    </span>
+
+    <span class="pill">
+      Fade-out ms:
+      <input id="fadeOutMs" type="number" min="0" max="5000" value="450" style="width:80px;" />
+    </span>
+
+    <button id="fadeAllBtn" class="pill">Fade Out All</button>
+    <button id="stopAllBtn" class="pill">Stop All</button>
+  </div>
+
+  <div class="small">
+    Left column = music only (tap again fades out). Right column = announcement (ducks music). If you hit Announce first, music starts ducked, then rises after the voice.
+  </div>
+
+  <div id="board" class="grid" style="margin-top: 12px;"></div>
+
+  <div class="status">
+    <div>Music: <span id="musicStatus" class="muted">none</span></div>
+    <div>Announce: <span id="voiceStatus" class="muted">idle</span></div>
+  </div>
+
+<script>
+(() => {
+  // ====== ROSTER ======
+  const players = ["Jude","Hawkins","Will","Moto","Ben","Bishop","Gabe","Calvin","Edwin","Mac","Max"];
+
+  // ====== AUDIO STATE ======
+  let audioCtx = null;
+
+  let musicGain = null;
+  let musicSource = null;
+  let currentMusicPlayer = null;
+
+  let voiceGain = null;
+  let voiceSource = null;
+  let isVoicePlaying = false;
+
+  const bufferCache = new Map();
+
+  // Fade timers (so we can cancel cleanly)
+  let pendingMusicStopTimer = null;
+
+  // Controls
+  const duckSlider = document.getElementById("duckSlider");
+  const duckLabel = document.getElementById("duckLabel");
+  const duckFadeMsInput = document.getElementById("duckFadeMs");
+  const fadeOutMsInput = document.getElementById("fadeOutMs");
+
+  const musicStatus = document.getElementById("musicStatus");
+  const voiceStatus = document.getElementById("voiceStatus");
+
+  function getDuckVol() { return parseFloat(duckSlider.value); }
+  function getDuckFadeMs() {
+    const n = parseInt(duckFadeMsInput.value || "0", 10);
+    return Math.max(0, Math.min(2000, n));
+  }
+  function getFadeOutMs() {
+    const n = parseInt(fadeOutMsInput.value || "0", 10);
+    return Math.max(0, Math.min(5000, n));
+  }
+  function now() { return audioCtx ? audioCtx.currentTime : 0; }
+
+  function setStatus() {
+    musicStatus.textContent = currentMusicPlayer ? `${currentMusicPlayer} (playing)` : "none";
+    musicStatus.className = currentMusicPlayer ? "" : "muted";
+    voiceStatus.textContent = isVoicePlaying ? "playing" : "idle";
+    voiceStatus.className = isVoicePlaying ? "" : "muted";
+  }
+
+  async function ensureAudio() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      musicGain = audioCtx.createGain();
+      voiceGain = audioCtx.createGain();
+
+      musicGain.gain.value = 1.0;
+      voiceGain.gain.value = 1.0;
+
+      musicGain.connect(audioCtx.destination);
+      voiceGain.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+  }
+
+  async function loadBuffer(url) {
+    if (bufferCache.has(url)) return bufferCache.get(url);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Fetch failed: ${url}`);
+    const arr = await res.arrayBuffer();
+    const buf = await audioCtx.decodeAudioData(arr);
+    bufferCache.set(url, buf);
+    return buf;
+  }
+
+  function cancelPendingMusicStop() {
+    if (pendingMusicStopTimer) {
+      clearTimeout(pendingMusicStopTimer);
+      pendingMusicStopTimer = null;
+    }
+  }
+
+  function rampMusicGain(target, fadeMs) {
+    if (!audioCtx || !musicGain) return;
+    const t0 = now();
+    const fadeSec = Math.max(0, fadeMs) / 1000;
+    const current = musicGain.gain.value;
+
+    musicGain.gain.cancelScheduledValues(t0);
+    musicGain.gain.setValueAtTime(current, t0);
+    musicGain.gain.linearRampToValueAtTime(target, t0 + fadeSec);
+  }
+
+  function stopMusicImmediate() {
+    cancelPendingMusicStop();
+    if (musicSource) {
+      try { musicSource.stop(); } catch {}
+      try { musicSource.disconnect(); } catch {}
+    }
+    musicSource = null;
+    currentMusicPlayer = null;
+    if (musicGain) musicGain.gain.value = 1.0;
+    setStatus();
+  }
+
+  function fadeOutMusicAndStop(ms) {
+    if (!musicSource) return;
+    cancelPendingMusicStop();
+
+    const fadeMs = Math.max(0, ms);
+    rampMusicGain(0.0001, fadeMs);
+
+    // Stop source after fade completes
+    pendingMusicStopTimer = setTimeout(() => {
+      stopMusicImmediate();
+      // Reset gain so next play starts normally
+      if (musicGain) musicGain.gain.value = isVoicePlaying ? getDuckVol() : 1.0;
+    }, fadeMs + 30);
+  }
+
+  function stopVoiceImmediate() {
+    if (voiceSource) {
+      try { voiceSource.stop(); } catch {}
+      try { voiceSource.disconnect(); } catch {}
+    }
+    voiceSource = null;
+    isVoicePlaying = false;
+    setStatus();
+  }
+
+  function stopAllImmediate() {
+    stopVoiceImmediate();
+    stopMusicImmediate();
+  }
+
+  function fadeOutAll() {
+    // Voice: just stop (no need to fade voice usually)
+    stopVoiceImmediate();
+    // Music: fade out if playing
+    if (musicSource) fadeOutMusicAndStop(getFadeOutMs());
+  }
+
+  async function playMusic(playerName) {
+    await ensureAudio();
+
+    // Tap same music button twice = fade out (not abrupt stop)
+    if (currentMusicPlayer === playerName && musicSource) {
+      fadeOutMusicAndStop(getFadeOutMs());
+      return;
+    }
+
+    // Switch to a different player's music: fade out old quickly, then start new
+    if (musicSource && currentMusicPlayer !== playerName) {
+      // quick fade out old
+      fadeOutMusicAndStop(Math.min(200, getFadeOutMs()));
+      // tiny delay so we don’t overlap harshly
+      await new Promise(r => setTimeout(r, 140));
+    }
+
+    // Now start the requested music
+    stopMusicImmediate();
+
+    const url = `media/${playerName}_Music.wav`;
+    const buf = await loadBuffer(url);
+
+    musicSource = audioCtx.createBufferSource();
+    musicSource.buffer = buf;
+    musicSource.connect(musicGain);
+
+    musicSource.onended = () => {
+      if (currentMusicPlayer === playerName) {
+        currentMusicPlayer = null;
+        musicSource = null;
+        setStatus();
+      }
+    };
+
+    currentMusicPlayer = playerName;
+
+    // If voice is playing, start ducked. Otherwise normal.
+    musicGain.gain.value = isVoicePlaying ? getDuckVol() : 1.0;
+
+    musicSource.start();
+    setStatus();
+  }
+
+  async function playAnnounce(playerName) {
+    await ensureAudio();
+
+    const duckVol = getDuckVol();
+    const duckFadeMs = getDuckFadeMs();
+
+    // If no music playing, start THIS player's music ducked
+    if (!musicSource) {
+      await playMusic(playerName);
+      // force duck immediately
+      if (musicGain) musicGain.gain.value = duckVol;
+    } else {
+      // Duck current music
+      rampMusicGain(duckVol, duckFadeMs);
+    }
+
+    // Stop any currently playing voice
+    stopVoiceImmediate();
+
+    const url = `media/${playerName}_Announce.mp3`;
+    const buf = await loadBuffer(url);
+
+    voiceSource = audioCtx.createBufferSource();
+    voiceSource.buffer = buf;
+    voiceSource.connect(voiceGain);
+
+    isVoicePlaying = true;
+    setStatus();
+
+    voiceSource.onended = () => {
+      isVoicePlaying = false;
+      voiceSource = null;
+
+      // Unduck if music still playing
+      if (musicSource) {
+        rampMusicGain(1.0, Math.max(120, duckFadeMs));
+      }
+      setStatus();
+    };
+
+    voiceSource.start();
+  }
+
+  // ====== UI BUILD ======
+  function buildBoard() {
+    const board = document.getElementById("board");
+    board.innerHTML = "";
+
+    for (const p of players) {
+      const musicBtn = document.createElement("button");
+      musicBtn.className = "musicBtn";
+      musicBtn.textContent = p;
+      musicBtn.addEventListener("click", () => playMusic(p).catch(err => alert(err.message)));
+
+      const annBtn = document.createElement("button");
+      annBtn.textContent = `${p} Announce`;
+      annBtn.addEventListener("click", () => playAnnounce(p).catch(err => alert(err.message)));
+
+      board.appendChild(musicBtn);
+      board.appendChild(annBtn);
+    }
+  }
+
+  // Controls
+  duckSlider.addEventListener("input", () => { duckLabel.textContent = duckSlider.value; });
+
+  document.getElementById("enableAudioBtn").addEventListener("click", async () => {
+    await ensureAudio();
+    alert("Audio enabled. You're good.");
+  });
+
+  document.getElementById("stopAllBtn").addEventListener("click", stopAllImmediate);
+  document.getElementById("fadeAllBtn").addEventListener("click", fadeOutAll);
+
+  buildBoard();
+  setStatus();
+})();
+</script>
+</body>
+</html>
