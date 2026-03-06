@@ -61,12 +61,12 @@
       margin-top:12px;
     }
 
-    .player-row{
-      display:grid;
-      grid-template-columns:44px 1.3fr 1fr;
-      gap:10px;
-      align-items:stretch;
-    }
+  .player-row{
+  display:grid;
+  grid-template-columns:1fr 1.3fr 44px;
+  gap:10px;
+  align-items:stretch;
+}
 
     .player-row.dragging{
       opacity:0.45;
@@ -88,10 +88,11 @@
       border-radius:10px;
       background:linear-gradient(180deg, var(--panel-2), var(--panel));
       color:var(--muted);
-      font-size:20px;
+      font-size:18px;
       cursor:grab;
       user-select:none;
       box-shadow:0 2px 8px var(--shadow);
+      opacity:0.9;
     }
 
     .drag-handle:hover{
@@ -266,8 +267,8 @@
 
     @media (max-width: 700px){
       .player-row{
-        grid-template-columns:38px 1.15fr 1fr;
-      }
+    grid-template-columns:1fr 1.15fr 38px;
+  }
 
       button{
         padding:14px 10px;
@@ -726,9 +727,9 @@
           annBtn.textContent = `${p} Announce`;
           annBtn.addEventListener("click", () => playAnnounce(p).catch(err => alert(err.message)));
 
-          row.appendChild(handle);
-          row.appendChild(musicBtn);
           row.appendChild(annBtn);
+          row.appendChild(musicBtn);
+          row.appendChild(handle);
 
           board.appendChild(row);
         });
@@ -758,3 +759,4 @@
   </script>
 </body>
 </html>
+
