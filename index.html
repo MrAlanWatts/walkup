@@ -314,30 +314,52 @@ input[type="range"]{
     setStatus();
   }
 
-  async function playAnnounce(playerName) {
-    await ensureAudio();
+async function playAnnounce(playerName) {
+  await ensureAudio();
 
-    const duckVol = getDuckVol();
-    const duckFadeMs = getDuckFadeMs();
+  const duckVol = getDuckVol();
+  const duckFadeMs = getDuckFadeMs();
 
-    // If no music playing, start THIS player's music ducked
-    if (!musicSource) {
-      await playMusic(playerName);
-      // force duck immediately
-      if (musicGain) musicGain.gain.value = duckVol;
-    } else {
-      // Duck current music
-      rampMusicGain(duckVol, duckFadeMs);
+  // Stop any currently playing voice first
+  stopVoiceImmediate();
+
+  // Try to start or duck music, but do not require it
+  if (!musicSource) {
+    try {
+      const musicUrl = `media/${playerName}_Music.wav`;
+      const musicBuf = await loadBuffer(musicUrl);
+
+      musicSource = audioCtx.createBufferSource();
+      musicSource.buffer = musicBuf;
+      musicSource.connect(musicGain);
+
+      musicSource.onended = () => {
+        if (currentMusicPlayer === playerName) {
+          currentMusicPlayer = null;
+          musicSource = null;
+          setStatus();
+        }
+      };
+
+      currentMusicPlayer = playerName;
+      musicGain.gain.value = duckVol;
+      musicSource.start();
+      setStatus();
+    } catch (err) {
+      console.log(`No music file found for ${playerName}, playing announcement only.`);
     }
+  } else {
+    // Music already playing, duck it
+    rampMusicGain(duckVol, duckFadeMs);
+  }
 
-    // Stop any currently playing voice
-    stopVoiceImmediate();
-
-    const url = `media/${playerName}_Announce.mp3`;
-    const buf = await loadBuffer(url);
+  // Now play announcement no matter what
+  try {
+    const announceUrl = `media/${playerName}_Announce.mp3`;
+    const announceBuf = await loadBuffer(announceUrl);
 
     voiceSource = audioCtx.createBufferSource();
-    voiceSource.buffer = buf;
+    voiceSource.buffer = announceBuf;
     voiceSource.connect(voiceGain);
 
     isVoicePlaying = true;
@@ -347,15 +369,25 @@ input[type="range"]{
       isVoicePlaying = false;
       voiceSource = null;
 
-      // Unduck if music still playing
+      // Only unduck if music is actually playing
       if (musicSource) {
         rampMusicGain(1.0, Math.max(120, duckFadeMs));
       }
+
       setStatus();
     };
 
     voiceSource.start();
+  } catch (err) {
+    alert(`Missing announcement file: media/${playerName}_Announce.mp3`);
+    isVoicePlaying = false;
+    setStatus();
+
+    if (musicSource) {
+      rampMusicGain(1.0, Math.max(120, duckFadeMs));
+    }
   }
+}
 
   // ====== UI BUILD ======
   function buildBoard() {
@@ -395,3 +427,4 @@ input[type="range"]{
 </body>
 
 </html>
+
