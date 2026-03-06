@@ -4,100 +4,192 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Walk-Up Soundboard</title>
-<style>
-:root{
-  --bg:#121212;
-  --panel:#1e1e1e;
-  --button:#2a2a2a;
-  --button-hover:#3a3a3a;
-  --border:#3a3a3a;
-  --text:#f2f2f2;
-  --muted:#9a9a9a;
-  --accent:#4da3ff;
-}
+  <style>
+    :root{
+      --bg:#121212;
+      --panel:#1e1e1e;
+      --button:#2a2a2a;
+      --button-hover:#3a3a3a;
+      --border:#3a3a3a;
+      --text:#f2f2f2;
+      --muted:#9a9a9a;
+      --accent:#4da3ff;
+      --music:#1f3d5a;
+      --music-hover:#2b5f8e;
+      --danger:#7a2f2f;
+      --danger-hover:#934040;
+      --success:#245a39;
+      --success-hover:#2f7348;
+    }
 
-body{
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  margin:0;
-  padding:16px;
-  background:var(--bg);
-  color:var(--text);
-}
+    *{
+      box-sizing:border-box;
+    }
 
-h1{
-  margin:0 0 12px 0;
-  font-size:20px;
-}
+    body{
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin:0;
+      padding:16px;
+      background:var(--bg);
+      color:var(--text);
+    }
 
-.topbar{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:center;
-  margin-bottom:12px;
-}
+    h1{
+      margin:0 0 12px 0;
+      font-size:20px;
+    }
 
-.grid{
-  display:grid;
-  grid-template-columns:1.3fr 1fr;
-  gap:10px;
-}
+    .topbar{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-bottom:12px;
+    }
 
-button{
-  width:100%;
-  padding:16px 12px;
-  font-size:16px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  background:var(--button);
-  color:var(--text);
-  cursor:pointer;
-}
+    #board{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:12px;
+    }
 
-button:hover{
-  background:var(--button-hover);
-}
+    .player-row{
+      display:grid;
+      grid-template-columns:44px 1.3fr 1fr;
+      gap:10px;
+      align-items:stretch;
+    }
 
-.musicBtn{
-  font-weight:700;
-  background:#1f3d5a;
-}
+    .player-row.dragging{
+      opacity:0.45;
+    }
 
-.musicBtn:hover{
-  background:#2b5f8e;
-}
+    .player-row.drag-over{
+      outline:2px dashed var(--accent);
+      outline-offset:4px;
+      border-radius:12px;
+    }
 
-.pill{
-  padding:8px 10px;
-  border:1px solid var(--border);
-  border-radius:999px;
-  background:var(--panel);
-}
+    .drag-handle{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid var(--border);
+      border-radius:10px;
+      background:var(--panel);
+      color:var(--muted);
+      font-size:20px;
+      cursor:grab;
+      user-select:none;
+    }
 
-.small{
-  font-size:12px;
-  color:var(--muted);
-}
+    .drag-handle:active{
+      cursor:grabbing;
+    }
 
-input[type="range"]{
-  width:180px;
-}
+    button{
+      width:100%;
+      padding:16px 12px;
+      font-size:16px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:var(--button);
+      color:var(--text);
+      cursor:pointer;
+    }
 
-.status{
-  margin-top:10px;
-  font-size:13px;
-}
+    button:hover{
+      background:var(--button-hover);
+    }
 
-.muted{
-  color:var(--muted);
-}
-</style>
+    .musicBtn{
+      font-weight:700;
+      background:var(--music);
+    }
+
+    .musicBtn:hover{
+      background:var(--music-hover);
+    }
+
+    .pill{
+      padding:8px 10px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:var(--panel);
+      color:var(--text);
+    }
+
+    .dangerBtn{
+      background:var(--danger);
+    }
+
+    .dangerBtn:hover{
+      background:var(--danger-hover);
+    }
+
+    .successBtn{
+      background:var(--success);
+    }
+
+    .successBtn:hover{
+      background:var(--success-hover);
+    }
+
+    .small{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+
+    input[type="range"]{
+      width:180px;
+      vertical-align:middle;
+    }
+
+    input[type="number"]{
+      background:var(--panel);
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:4px 6px;
+    }
+
+    .status{
+      margin-top:14px;
+      font-size:13px;
+      line-height:1.5;
+    }
+
+    .muted{
+      color:var(--muted);
+    }
+
+    @media (max-width: 700px){
+      .player-row{
+        grid-template-columns:38px 1.15fr 1fr;
+      }
+
+      button{
+        padding:14px 10px;
+        font-size:15px;
+      }
+
+      .topbar{
+        gap:8px;
+      }
+
+      input[type="range"]{
+        width:130px;
+      }
+    }
+  </style>
 </head>
 <body>
   <h1>Walk-Up Soundboard</h1>
 
   <div class="topbar">
-    <button id="enableAudioBtn" class="pill">Enable Audio</button>
+    <button id="enableAudioBtn" class="pill successBtn">Enable Audio</button>
 
     <span class="pill">
       Duck: <strong id="duckLabel">0.25</strong>
@@ -115,316 +207,391 @@ input[type="range"]{
     </span>
 
     <button id="fadeAllBtn" class="pill">Fade Out All</button>
-    <button id="stopAllBtn" class="pill">Stop All</button>
+    <button id="stopAllBtn" class="pill dangerBtn">Stop All</button>
   </div>
 
   <div class="small">
-    Left column = music only (tap again fades out). Right column = announcement (ducks music). If you hit Announce first, music starts ducked, then rises after the voice.
+    Drag rows by the ☰ handle to reorder the lineup. Left button plays music only. Tapping the same music button again fades it out. Right button plays the announcement and ducks music. If no music is playing, it will try to start that player’s music ducked first, but the announcement will still play even if the music file is missing.
   </div>
 
-  <div id="board" class="grid" style="margin-top: 12px;"></div>
+  <div id="board"></div>
 
   <div class="status">
     <div>Music: <span id="musicStatus" class="muted">none</span></div>
     <div>Announce: <span id="voiceStatus" class="muted">idle</span></div>
   </div>
 
-<script>
-(() => {
-  // ====== ROSTER ======
-  const players = ["Jude","Hawkins","Will","Moto","Ben","Bishop","Gabe","Calvin","Eddie","Mac","Max"];
+  <script>
+    (() => {
+      let players = ["Jude","Hawkins","Will","Moto","Ben","Bishop","Gabe","Calvin","Eddie","Mac","Max"];
 
-  // ====== AUDIO STATE ======
-  let audioCtx = null;
+      let audioCtx = null;
 
-  let musicGain = null;
-  let musicSource = null;
-  let currentMusicPlayer = null;
+      let musicGain = null;
+      let musicSource = null;
+      let currentMusicPlayer = null;
 
-  let voiceGain = null;
-  let voiceSource = null;
-  let isVoicePlaying = false;
+      let voiceGain = null;
+      let voiceSource = null;
+      let isVoicePlaying = false;
 
-  const bufferCache = new Map();
+      const bufferCache = new Map();
+      let pendingMusicStopTimer = null;
 
-  // Fade timers (so we can cancel cleanly)
-  let pendingMusicStopTimer = null;
+      const duckSlider = document.getElementById("duckSlider");
+      const duckLabel = document.getElementById("duckLabel");
+      const duckFadeMsInput = document.getElementById("duckFadeMs");
+      const fadeOutMsInput = document.getElementById("fadeOutMs");
 
-  // Controls
-  const duckSlider = document.getElementById("duckSlider");
-  const duckLabel = document.getElementById("duckLabel");
-  const duckFadeMsInput = document.getElementById("duckFadeMs");
-  const fadeOutMsInput = document.getElementById("fadeOutMs");
+      const musicStatus = document.getElementById("musicStatus");
+      const voiceStatus = document.getElementById("voiceStatus");
 
-  const musicStatus = document.getElementById("musicStatus");
-  const voiceStatus = document.getElementById("voiceStatus");
+      function getDuckVol() {
+        return parseFloat(duckSlider.value);
+      }
 
-  function getDuckVol() { return parseFloat(duckSlider.value); }
-  function getDuckFadeMs() {
-    const n = parseInt(duckFadeMsInput.value || "0", 10);
-    return Math.max(0, Math.min(2000, n));
-  }
-  function getFadeOutMs() {
-    const n = parseInt(fadeOutMsInput.value || "0", 10);
-    return Math.max(0, Math.min(5000, n));
-  }
-  function now() { return audioCtx ? audioCtx.currentTime : 0; }
+      function getDuckFadeMs() {
+        const n = parseInt(duckFadeMsInput.value || "0", 10);
+        return Math.max(0, Math.min(2000, n));
+      }
 
-  function setStatus() {
-    musicStatus.textContent = currentMusicPlayer ? `${currentMusicPlayer} (playing)` : "none";
-    musicStatus.className = currentMusicPlayer ? "" : "muted";
-    voiceStatus.textContent = isVoicePlaying ? "playing" : "idle";
-    voiceStatus.className = isVoicePlaying ? "" : "muted";
-  }
+      function getFadeOutMs() {
+        const n = parseInt(fadeOutMsInput.value || "0", 10);
+        return Math.max(0, Math.min(5000, n));
+      }
 
-  async function ensureAudio() {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      function now() {
+        return audioCtx ? audioCtx.currentTime : 0;
+      }
 
-      musicGain = audioCtx.createGain();
-      voiceGain = audioCtx.createGain();
+      function setStatus() {
+        musicStatus.textContent = currentMusicPlayer ? `${currentMusicPlayer} (playing)` : "none";
+        musicStatus.className = currentMusicPlayer ? "" : "muted";
 
-      musicGain.gain.value = 1.0;
-      voiceGain.gain.value = 1.0;
+        voiceStatus.textContent = isVoicePlaying ? "playing" : "idle";
+        voiceStatus.className = isVoicePlaying ? "" : "muted";
+      }
 
-      musicGain.connect(audioCtx.destination);
-      voiceGain.connect(audioCtx.destination);
-    }
-    if (audioCtx.state === "suspended") await audioCtx.resume();
-  }
+      function savePlayerOrder() {
+        localStorage.setItem("walkup_players", JSON.stringify(players));
+      }
 
-  async function loadBuffer(url) {
-    if (bufferCache.has(url)) return bufferCache.get(url);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Fetch failed: ${url}`);
-    const arr = await res.arrayBuffer();
-    const buf = await audioCtx.decodeAudioData(arr);
-    bufferCache.set(url, buf);
-    return buf;
-  }
+      function loadPlayerOrder() {
+        const saved = localStorage.getItem("walkup_players");
+        if (!saved) return;
 
-  function cancelPendingMusicStop() {
-    if (pendingMusicStopTimer) {
-      clearTimeout(pendingMusicStopTimer);
-      pendingMusicStopTimer = null;
-    }
-  }
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length) {
+            players = parsed;
+          }
+        } catch (err) {
+          console.log("Could not load saved player order.");
+        }
+      }
 
-  function rampMusicGain(target, fadeMs) {
-    if (!audioCtx || !musicGain) return;
-    const t0 = now();
-    const fadeSec = Math.max(0, fadeMs) / 1000;
-    const current = musicGain.gain.value;
+      async function ensureAudio() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-    musicGain.gain.cancelScheduledValues(t0);
-    musicGain.gain.setValueAtTime(current, t0);
-    musicGain.gain.linearRampToValueAtTime(target, t0 + fadeSec);
-  }
+          musicGain = audioCtx.createGain();
+          voiceGain = audioCtx.createGain();
 
-  function stopMusicImmediate() {
-    cancelPendingMusicStop();
-    if (musicSource) {
-      try { musicSource.stop(); } catch {}
-      try { musicSource.disconnect(); } catch {}
-    }
-    musicSource = null;
-    currentMusicPlayer = null;
-    if (musicGain) musicGain.gain.value = 1.0;
-    setStatus();
-  }
+          musicGain.gain.value = 1.0;
+          voiceGain.gain.value = 1.0;
 
-  function fadeOutMusicAndStop(ms) {
-    if (!musicSource) return;
-    cancelPendingMusicStop();
+          musicGain.connect(audioCtx.destination);
+          voiceGain.connect(audioCtx.destination);
+        }
 
-    const fadeMs = Math.max(0, ms);
-    rampMusicGain(0.0001, fadeMs);
+        if (audioCtx.state === "suspended") {
+          await audioCtx.resume();
+        }
+      }
 
-    // Stop source after fade completes
-    pendingMusicStopTimer = setTimeout(() => {
-      stopMusicImmediate();
-      // Reset gain so next play starts normally
-      if (musicGain) musicGain.gain.value = isVoicePlaying ? getDuckVol() : 1.0;
-    }, fadeMs + 30);
-  }
+      async function loadBuffer(url) {
+        if (bufferCache.has(url)) return bufferCache.get(url);
 
-  function stopVoiceImmediate() {
-    if (voiceSource) {
-      try { voiceSource.stop(); } catch {}
-      try { voiceSource.disconnect(); } catch {}
-    }
-    voiceSource = null;
-    isVoicePlaying = false;
-    setStatus();
-  }
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Fetch failed: ${url}`);
 
-  function stopAllImmediate() {
-    stopVoiceImmediate();
-    stopMusicImmediate();
-  }
+        const arr = await res.arrayBuffer();
+        const buf = await audioCtx.decodeAudioData(arr);
+        bufferCache.set(url, buf);
+        return buf;
+      }
 
-  function fadeOutAll() {
-    // Voice: just stop (no need to fade voice usually)
-    stopVoiceImmediate();
-    // Music: fade out if playing
-    if (musicSource) fadeOutMusicAndStop(getFadeOutMs());
-  }
+      function cancelPendingMusicStop() {
+        if (pendingMusicStopTimer) {
+          clearTimeout(pendingMusicStopTimer);
+          pendingMusicStopTimer = null;
+        }
+      }
 
-  async function playMusic(playerName) {
-    await ensureAudio();
+      function rampMusicGain(target, fadeMs) {
+        if (!audioCtx || !musicGain) return;
 
-    // Tap same music button twice = fade out (not abrupt stop)
-    if (currentMusicPlayer === playerName && musicSource) {
-      fadeOutMusicAndStop(getFadeOutMs());
-      return;
-    }
+        const t0 = now();
+        const fadeSec = Math.max(0, fadeMs) / 1000;
+        const current = musicGain.gain.value;
 
-    // Switch to a different player's music: fade out old quickly, then start new
-    if (musicSource && currentMusicPlayer !== playerName) {
-      // quick fade out old
-      fadeOutMusicAndStop(Math.min(200, getFadeOutMs()));
-      // tiny delay so we don’t overlap harshly
-      await new Promise(r => setTimeout(r, 140));
-    }
+        musicGain.gain.cancelScheduledValues(t0);
+        musicGain.gain.setValueAtTime(current, t0);
+        musicGain.gain.linearRampToValueAtTime(target, t0 + fadeSec);
+      }
 
-    // Now start the requested music
-    stopMusicImmediate();
+      function stopMusicImmediate() {
+        cancelPendingMusicStop();
 
-    const url = `media/${playerName}_Music.wav`;
-    const buf = await loadBuffer(url);
+        if (musicSource) {
+          try { musicSource.stop(); } catch {}
+          try { musicSource.disconnect(); } catch {}
+        }
 
-    musicSource = audioCtx.createBufferSource();
-    musicSource.buffer = buf;
-    musicSource.connect(musicGain);
-
-    musicSource.onended = () => {
-      if (currentMusicPlayer === playerName) {
-        currentMusicPlayer = null;
         musicSource = null;
+        currentMusicPlayer = null;
+
+        if (musicGain) {
+          musicGain.gain.value = 1.0;
+        }
+
         setStatus();
       }
-    };
 
-    currentMusicPlayer = playerName;
+      function fadeOutMusicAndStop(ms) {
+        if (!musicSource) return;
 
-    // If voice is playing, start ducked. Otherwise normal.
-    musicGain.gain.value = isVoicePlaying ? getDuckVol() : 1.0;
+        cancelPendingMusicStop();
 
-    musicSource.start();
-    setStatus();
-  }
+        const fadeMs = Math.max(0, ms);
+        rampMusicGain(0.0001, fadeMs);
 
-async function playAnnounce(playerName) {
-  await ensureAudio();
-
-  const duckVol = getDuckVol();
-  const duckFadeMs = getDuckFadeMs();
-
-  // Stop any currently playing voice first
-  stopVoiceImmediate();
-
-  // Try to start or duck music, but do not require it
-  if (!musicSource) {
-    try {
-      const musicUrl = `media/${playerName}_Music.wav`;
-      const musicBuf = await loadBuffer(musicUrl);
-
-      musicSource = audioCtx.createBufferSource();
-      musicSource.buffer = musicBuf;
-      musicSource.connect(musicGain);
-
-      musicSource.onended = () => {
-        if (currentMusicPlayer === playerName) {
-          currentMusicPlayer = null;
-          musicSource = null;
-          setStatus();
-        }
-      };
-
-      currentMusicPlayer = playerName;
-      musicGain.gain.value = duckVol;
-      musicSource.start();
-      setStatus();
-    } catch (err) {
-      console.log(`No music file found for ${playerName}, playing announcement only.`);
-    }
-  } else {
-    // Music already playing, duck it
-    rampMusicGain(duckVol, duckFadeMs);
-  }
-
-  // Now play announcement no matter what
-  try {
-    const announceUrl = `media/${playerName}_Announce.mp3`;
-    const announceBuf = await loadBuffer(announceUrl);
-
-    voiceSource = audioCtx.createBufferSource();
-    voiceSource.buffer = announceBuf;
-    voiceSource.connect(voiceGain);
-
-    isVoicePlaying = true;
-    setStatus();
-
-    voiceSource.onended = () => {
-      isVoicePlaying = false;
-      voiceSource = null;
-
-      // Only unduck if music is actually playing
-      if (musicSource) {
-        rampMusicGain(1.0, Math.max(120, duckFadeMs));
+        pendingMusicStopTimer = setTimeout(() => {
+          stopMusicImmediate();
+          if (musicGain) {
+            musicGain.gain.value = isVoicePlaying ? getDuckVol() : 1.0;
+          }
+        }, fadeMs + 30);
       }
 
+      function stopVoiceImmediate() {
+        if (voiceSource) {
+          try { voiceSource.stop(); } catch {}
+          try { voiceSource.disconnect(); } catch {}
+        }
+
+        voiceSource = null;
+        isVoicePlaying = false;
+        setStatus();
+      }
+
+      function stopAllImmediate() {
+        stopVoiceImmediate();
+        stopMusicImmediate();
+      }
+
+      function fadeOutAll() {
+        stopVoiceImmediate();
+        if (musicSource) {
+          fadeOutMusicAndStop(getFadeOutMs());
+        }
+      }
+
+      async function playMusic(playerName) {
+        await ensureAudio();
+
+        if (currentMusicPlayer === playerName && musicSource) {
+          fadeOutMusicAndStop(getFadeOutMs());
+          return;
+        }
+
+        if (musicSource && currentMusicPlayer !== playerName) {
+          fadeOutMusicAndStop(Math.min(200, getFadeOutMs()));
+          await new Promise(r => setTimeout(r, 140));
+        }
+
+        stopMusicImmediate();
+
+        const url = `media/${playerName}_Music.wav`;
+        const buf = await loadBuffer(url);
+
+        musicSource = audioCtx.createBufferSource();
+        musicSource.buffer = buf;
+        musicSource.connect(musicGain);
+
+        musicSource.onended = () => {
+          if (currentMusicPlayer === playerName) {
+            currentMusicPlayer = null;
+            musicSource = null;
+            setStatus();
+          }
+        };
+
+        currentMusicPlayer = playerName;
+        musicGain.gain.value = isVoicePlaying ? getDuckVol() : 1.0;
+
+        musicSource.start();
+        setStatus();
+      }
+
+      async function playAnnounce(playerName) {
+        await ensureAudio();
+
+        const duckVol = getDuckVol();
+        const duckFadeMs = getDuckFadeMs();
+
+        stopVoiceImmediate();
+
+        if (!musicSource) {
+          try {
+            const musicUrl = `media/${playerName}_Music.wav`;
+            const musicBuf = await loadBuffer(musicUrl);
+
+            musicSource = audioCtx.createBufferSource();
+            musicSource.buffer = musicBuf;
+            musicSource.connect(musicGain);
+
+            musicSource.onended = () => {
+              if (currentMusicPlayer === playerName) {
+                currentMusicPlayer = null;
+                musicSource = null;
+                setStatus();
+              }
+            };
+
+            currentMusicPlayer = playerName;
+            musicGain.gain.value = duckVol;
+            musicSource.start();
+            setStatus();
+          } catch (err) {
+            console.log(`No music file found for ${playerName}, playing announcement only.`);
+          }
+        } else {
+          rampMusicGain(duckVol, duckFadeMs);
+        }
+
+        try {
+          const announceUrl = `media/${playerName}_Announce.mp3`;
+          const announceBuf = await loadBuffer(announceUrl);
+
+          voiceSource = audioCtx.createBufferSource();
+          voiceSource.buffer = announceBuf;
+          voiceSource.connect(voiceGain);
+
+          isVoicePlaying = true;
+          setStatus();
+
+          voiceSource.onended = () => {
+            isVoicePlaying = false;
+            voiceSource = null;
+
+            if (musicSource) {
+              rampMusicGain(1.0, Math.max(120, duckFadeMs));
+            }
+
+            setStatus();
+          };
+
+          voiceSource.start();
+        } catch (err) {
+          alert(`Missing announcement file: media/${playerName}_Announce.mp3`);
+          isVoicePlaying = false;
+          setStatus();
+
+          if (musicSource) {
+            rampMusicGain(1.0, Math.max(120, duckFadeMs));
+          }
+        }
+      }
+
+      function buildBoard() {
+        const board = document.getElementById("board");
+        board.innerHTML = "";
+
+        let draggedIndex = null;
+
+        players.forEach((p, index) => {
+          const row = document.createElement("div");
+          row.className = "player-row";
+          row.setAttribute("draggable", "true");
+          row.dataset.index = index;
+
+          row.addEventListener("dragstart", (e) => {
+            draggedIndex = index;
+            row.classList.add("dragging");
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", String(index));
+          });
+
+          row.addEventListener("dragend", () => {
+            row.classList.remove("dragging");
+            document.querySelectorAll(".player-row").forEach(r => r.classList.remove("drag-over"));
+          });
+
+          row.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            row.classList.add("drag-over");
+            e.dataTransfer.dropEffect = "move";
+          });
+
+          row.addEventListener("dragleave", () => {
+            row.classList.remove("drag-over");
+          });
+
+          row.addEventListener("drop", (e) => {
+            e.preventDefault();
+            row.classList.remove("drag-over");
+
+            const fromIndex = draggedIndex ?? parseInt(e.dataTransfer.getData("text/plain"), 10);
+            const toIndex = index;
+
+            if (Number.isNaN(fromIndex) || fromIndex === toIndex) return;
+
+            const moved = players.splice(fromIndex, 1)[0];
+            players.splice(toIndex, 0, moved);
+
+            savePlayerOrder();
+            buildBoard();
+          });
+
+          const handle = document.createElement("div");
+          handle.className = "drag-handle";
+          handle.textContent = "☰";
+          handle.title = `Drag ${p}`;
+
+          const musicBtn = document.createElement("button");
+          musicBtn.className = "musicBtn";
+          musicBtn.textContent = p;
+          musicBtn.addEventListener("click", () => playMusic(p).catch(err => alert(err.message)));
+
+          const annBtn = document.createElement("button");
+          annBtn.textContent = `${p} Announce`;
+          annBtn.addEventListener("click", () => playAnnounce(p).catch(err => alert(err.message)));
+
+          row.appendChild(handle);
+          row.appendChild(musicBtn);
+          row.appendChild(annBtn);
+
+          board.appendChild(row);
+        });
+      }
+
+      duckSlider.addEventListener("input", () => {
+        duckLabel.textContent = duckSlider.value;
+      });
+
+      document.getElementById("enableAudioBtn").addEventListener("click", async () => {
+        await ensureAudio();
+        alert("Audio enabled. You're good.");
+      });
+
+      document.getElementById("stopAllBtn").addEventListener("click", stopAllImmediate);
+      document.getElementById("fadeAllBtn").addEventListener("click", fadeOutAll);
+
+      loadPlayerOrder();
+      buildBoard();
       setStatus();
-    };
-
-    voiceSource.start();
-  } catch (err) {
-    alert(`Missing announcement file: media/${playerName}_Announce.mp3`);
-    isVoicePlaying = false;
-    setStatus();
-
-    if (musicSource) {
-      rampMusicGain(1.0, Math.max(120, duckFadeMs));
-    }
-  }
-}
-
-  // ====== UI BUILD ======
-  function buildBoard() {
-    const board = document.getElementById("board");
-    board.innerHTML = "";
-
-    for (const p of players) {
-      const musicBtn = document.createElement("button");
-      musicBtn.className = "musicBtn";
-      musicBtn.textContent = p;
-      musicBtn.addEventListener("click", () => playMusic(p).catch(err => alert(err.message)));
-
-      const annBtn = document.createElement("button");
-      annBtn.textContent = `${p} Announce`;
-      annBtn.addEventListener("click", () => playAnnounce(p).catch(err => alert(err.message)));
-
-      board.appendChild(musicBtn);
-      board.appendChild(annBtn);
-    }
-  }
-
-  // Controls
-  duckSlider.addEventListener("input", () => { duckLabel.textContent = duckSlider.value; });
-
-  document.getElementById("enableAudioBtn").addEventListener("click", async () => {
-    await ensureAudio();
-    alert("Audio enabled. You're good.");
-  });
-
-  document.getElementById("stopAllBtn").addEventListener("click", stopAllImmediate);
-  document.getElementById("fadeAllBtn").addEventListener("click", fadeOutAll);
-
-  buildBoard();
-  setStatus();
-})();
-</script>
+    })();
+  </script>
 </body>
-
 </html>
-
