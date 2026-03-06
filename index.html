@@ -4,186 +4,221 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Walk-Up Soundboard</title>
-  <style>
-    :root{
-      --bg:#121212;
-      --panel:#1e1e1e;
-      --button:#2a2a2a;
-      --button-hover:#3a3a3a;
-      --border:#3a3a3a;
-      --text:#f2f2f2;
-      --muted:#9a9a9a;
-      --accent:#4da3ff;
-      --music:#1f3d5a;
-      --music-hover:#2b5f8e;
-      --danger:#7a2f2f;
-      --danger-hover:#934040;
-      --success:#245a39;
-      --success-hover:#2f7348;
-    }
+ <style>
+  :root{
+    --bg:#0f0f10;
+    --panel:#1a1a1c;
+    --panel-2:#222225;
+    --button:#26262a;
+    --button-hover:#303036;
+    --border:#3a3a40;
+    --text:#f5f1e8;
+    --muted:#b7aa96;
+    --accent:#ff6a13;
+    --accent-2:#ff8c32;
+    --music:#c85a17;
+    --music-hover:#e06a1c;
+    --announce:#2a2a2f;
+    --announce-hover:#37373d;
+    --danger:#7d2f1f;
+    --danger-hover:#9a3b27;
+    --success:#7a4a12;
+    --success-hover:#955b17;
+    --glow:rgba(255,106,19,0.25);
+    --shadow:rgba(0,0,0,0.35);
+  }
 
-    *{
-      box-sizing:border-box;
-    }
+  *{
+    box-sizing:border-box;
+  }
 
-    body{
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      margin:0;
-      padding:16px;
-      background:var(--bg);
-      color:var(--text);
-    }
+  body{
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    margin:0;
+    padding:16px;
+    background:
+      radial-gradient(circle at top left, rgba(255,106,19,0.10), transparent 28%),
+      linear-gradient(180deg, #121214 0%, #0d0d0e 100%);
+    color:var(--text);
+  }
 
-    h1{
-      margin:0 0 12px 0;
-      font-size:20px;
-    }
+  h1{
+    margin:0 0 12px 0;
+    font-size:22px;
+    color:var(--text);
+    letter-spacing:0.3px;
+  }
 
-    .topbar{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      align-items:center;
-      margin-bottom:12px;
-    }
+  .topbar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-bottom:12px;
+  }
 
-    #board{
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      margin-top:12px;
-    }
+  #board{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top:12px;
+  }
 
+  .player-row{
+    display:grid;
+    grid-template-columns:44px 1.3fr 1fr;
+    gap:10px;
+    align-items:stretch;
+  }
+
+  .player-row.dragging{
+    opacity:0.45;
+    transform:scale(0.995);
+  }
+
+  .player-row.drag-over{
+    outline:2px dashed var(--accent);
+    outline-offset:4px;
+    border-radius:12px;
+    box-shadow:0 0 0 4px rgba(255,106,19,0.08);
+  }
+
+  .drag-handle{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid var(--border);
+    border-radius:10px;
+    background:linear-gradient(180deg, var(--panel-2), var(--panel));
+    color:var(--muted);
+    font-size:20px;
+    cursor:grab;
+    user-select:none;
+    box-shadow:0 2px 8px var(--shadow);
+  }
+
+  .drag-handle:hover{
+    color:var(--accent-2);
+    border-color:#5a4636;
+  }
+
+  .drag-handle:active{
+    cursor:grabbing;
+  }
+
+  button{
+    width:100%;
+    padding:16px 12px;
+    font-size:16px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:linear-gradient(180deg, #2a2a2d, #202024);
+    color:var(--text);
+    cursor:pointer;
+    transition:background 0.15s ease, transform 0.05s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    box-shadow:0 3px 10px var(--shadow);
+  }
+
+  button:hover{
+    background:linear-gradient(180deg, var(--button-hover), var(--button));
+    border-color:#5d4737;
+  }
+
+  button:active{
+    transform:translateY(1px);
+  }
+
+  .musicBtn{
+    font-weight:700;
+    background:linear-gradient(180deg, #d7671e, #a84811);
+    border-color:#e27a33;
+    color:#fff8f1;
+  }
+
+  .musicBtn:hover{
+    background:linear-gradient(180deg, #ea7627, #bb5414);
+    border-color:#ff9a4a;
+    box-shadow:0 0 0 3px rgba(255,106,19,0.12), 0 4px 14px var(--shadow);
+  }
+
+  .pill{
+    padding:8px 10px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    background:linear-gradient(180deg, var(--panel-2), var(--panel));
+    color:var(--text);
+    box-shadow:0 2px 8px var(--shadow);
+  }
+
+  .dangerBtn{
+    background:linear-gradient(180deg, var(--danger-hover), var(--danger));
+    border-color:#a14a35;
+  }
+
+  .dangerBtn:hover{
+    background:linear-gradient(180deg, #ad4430, #873120);
+  }
+
+  .successBtn{
+    background:linear-gradient(180deg, var(--success-hover), var(--success));
+    border-color:#b36a19;
+  }
+
+  .successBtn:hover{
+    background:linear-gradient(180deg, #aa6719, #874f12);
+  }
+
+  .small{
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.45;
+  }
+
+  input[type="range"]{
+    width:180px;
+    vertical-align:middle;
+    accent-color:var(--accent);
+  }
+
+  input[type="number"]{
+    background:var(--panel);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:4px 6px;
+  }
+
+  .status{
+    margin-top:14px;
+    font-size:13px;
+    line-height:1.5;
+    padding-top:8px;
+    border-top:1px solid rgba(255,255,255,0.06);
+  }
+
+  .muted{
+    color:var(--muted);
+  }
+
+  @media (max-width: 700px){
     .player-row{
-      display:grid;
-      grid-template-columns:44px 1.3fr 1fr;
-      gap:10px;
-      align-items:stretch;
-    }
-
-    .player-row.dragging{
-      opacity:0.45;
-    }
-
-    .player-row.drag-over{
-      outline:2px dashed var(--accent);
-      outline-offset:4px;
-      border-radius:12px;
-    }
-
-    .drag-handle{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border:1px solid var(--border);
-      border-radius:10px;
-      background:var(--panel);
-      color:var(--muted);
-      font-size:20px;
-      cursor:grab;
-      user-select:none;
-    }
-
-    .drag-handle:active{
-      cursor:grabbing;
+      grid-template-columns:38px 1.15fr 1fr;
     }
 
     button{
-      width:100%;
-      padding:16px 12px;
-      font-size:16px;
-      border-radius:10px;
-      border:1px solid var(--border);
-      background:var(--button);
-      color:var(--text);
-      cursor:pointer;
+      padding:14px 10px;
+      font-size:15px;
     }
 
-    button:hover{
-      background:var(--button-hover);
-    }
-
-    .musicBtn{
-      font-weight:700;
-      background:var(--music);
-    }
-
-    .musicBtn:hover{
-      background:var(--music-hover);
-    }
-
-    .pill{
-      padding:8px 10px;
-      border:1px solid var(--border);
-      border-radius:999px;
-      background:var(--panel);
-      color:var(--text);
-    }
-
-    .dangerBtn{
-      background:var(--danger);
-    }
-
-    .dangerBtn:hover{
-      background:var(--danger-hover);
-    }
-
-    .successBtn{
-      background:var(--success);
-    }
-
-    .successBtn:hover{
-      background:var(--success-hover);
-    }
-
-    .small{
-      font-size:12px;
-      color:var(--muted);
-      line-height:1.4;
+    .topbar{
+      gap:8px;
     }
 
     input[type="range"]{
-      width:180px;
-      vertical-align:middle;
+      width:130px;
     }
-
-    input[type="number"]{
-      background:var(--panel);
-      color:var(--text);
-      border:1px solid var(--border);
-      border-radius:6px;
-      padding:4px 6px;
-    }
-
-    .status{
-      margin-top:14px;
-      font-size:13px;
-      line-height:1.5;
-    }
-
-    .muted{
-      color:var(--muted);
-    }
-
-    @media (max-width: 700px){
-      .player-row{
-        grid-template-columns:38px 1.15fr 1fr;
-      }
-
-      button{
-        padding:14px 10px;
-        font-size:15px;
-      }
-
-      .topbar{
-        gap:8px;
-      }
-
-      input[type="range"]{
-        width:130px;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
   <h1>Walk-Up Soundboard</h1>
@@ -595,4 +630,5 @@
   </script>
 </body>
 </html>
+
 
