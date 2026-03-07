@@ -61,12 +61,12 @@
       margin-top:12px;
     }
 
-  .player-row{
-  display:grid;
-  grid-template-columns:1fr 1.3fr 44px;
-  gap:10px;
-  align-items:stretch;
-}
+    .player-row{
+      display:grid;
+      grid-template-columns:1fr 1.3fr 44px;
+      gap:10px;
+      align-items:stretch;
+    }
 
     .player-row.dragging{
       opacity:0.45;
@@ -267,8 +267,8 @@
 
     @media (max-width: 700px){
       .player-row{
-    grid-template-columns:1fr 1.15fr 38px;
-  }
+        grid-template-columns:1fr 1.15fr 38px;
+      }
 
       button{
         padding:14px 10px;
@@ -290,7 +290,7 @@
   </div>
 
   <div class="small">
-    Drag rows by the ☰ handle to reorder the lineup. Left button plays music only. Tapping the same music button again fades it out. Right button plays the announcement and ducks music. If no music is playing, it will try to start that player’s music ducked first, but the announcement will still play even if the music file is missing.
+    Drag rows by the ☰ handle to reorder the lineup. Left button plays announcement, middle button plays music only. Tapping the same music button again fades it out. Announcement ducks music. If no music is playing, it will try to start that player’s music ducked first, but the announcement will still play even if the music file is missing.
   </div>
 
   <div id="settingsPanel" class="settings-panel">
@@ -348,6 +348,7 @@
       let isVoicePlaying = false;
 
       const bufferCache = new Map();
+      const announceUrlCache = new Map();
       let pendingMusicStopTimer = null;
 
       const settingsPanel = document.getElementById("settingsPanel");
@@ -471,6 +472,56 @@
         const buf = await audioCtx.decodeAudioData(arr);
         bufferCache.set(url, buf);
         return buf;
+      }
+
+      async function urlExists(url) {
+        try {
+          const res = await fetch(url, { method: "HEAD", cache: "no-store" });
+          return res.ok;
+        } catch {
+          return false;
+        }
+      }
+
+      function shuffleArray(arr) {
+        const copy = [...arr];
+        for (let i = copy.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [copy[i], copy[j]] = [copy[j], copy[i]];
+        }
+        return copy;
+      }
+
+      async function getRandomAnnounceUrl(playerName) {
+        if (announceUrlCache.has(playerName)) {
+          const cached = announceUrlCache.get(playerName);
+          return cached[Math.floor(Math.random() * cached.length)];
+        }
+
+        const numberedCandidates = [];
+        for (let i = 1; i <= 10; i++) {
+          numberedCandidates.push(`media/${playerName}_Announce_${i}.mp3`);
+        }
+
+        const valid = [];
+        for (const url of shuffleArray(numberedCandidates)) {
+          if (await urlExists(url)) {
+            valid.push(url);
+          }
+        }
+
+        if (valid.length > 0) {
+          announceUrlCache.set(playerName, valid);
+          return valid[Math.floor(Math.random() * valid.length)];
+        }
+
+        const fallback = `media/${playerName}_Announce.mp3`;
+        if (await urlExists(fallback)) {
+          announceUrlCache.set(playerName, [fallback]);
+          return fallback;
+        }
+
+        return null;
       }
 
       function cancelPendingMusicStop() {
@@ -628,7 +679,19 @@
         }
 
         try {
-          const announceUrl = `media/${playerName}_Announce.mp3`;
+          const announceUrl = await getRandomAnnounceUrl(playerName);
+
+          if (!announceUrl) {
+            alert(`No announce files found for ${playerName}`);
+            isVoicePlaying = false;
+            setStatus();
+
+            if (musicSource) {
+              rampMusicGain(getMusicVolume(), Math.max(120, duckFadeMs));
+            }
+            return;
+          }
+
           const announceBuf = await loadBuffer(announceUrl);
 
           voiceSource = audioCtx.createBufferSource();
@@ -653,7 +716,7 @@
 
           voiceSource.start();
         } catch (err) {
-          alert(`Missing announcement file: media/${playerName}_Announce.mp3`);
+          alert(`Problem loading announce file(s) for ${playerName}`);
           isVoicePlaying = false;
           setStatus();
 
@@ -759,4 +822,3 @@
   </script>
 </body>
 </html>
-
